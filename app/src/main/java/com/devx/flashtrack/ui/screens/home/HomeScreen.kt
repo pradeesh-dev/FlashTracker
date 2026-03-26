@@ -21,6 +21,7 @@ import com.devx.flashtrack.ui.navigation.Screen
 import com.devx.flashtrack.ui.theme.*
 import com.devx.flashtrack.viewmodel.MainViewModel
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.TextStyle
 import java.util.Locale
 
@@ -39,7 +40,7 @@ fun HomeScreen(
     val monthExpense by viewModel.currentMonthExpense.collectAsStateWithLifecycle()
     val monthIncome by viewModel.currentMonthIncome.collectAsStateWithLifecycle()
 
-    val now = LocalDate.now()
+    val now = LocalTime.now()
     val greeting = when (now.hour) {
         in 5..11 -> "Good Morning ☀️"
         in 12..16 -> "Good Afternoon 🌤"
