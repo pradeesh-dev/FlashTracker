@@ -4,14 +4,14 @@ import androidx.room.*
 import com.devx.flashtrack.data.local.entity.*
 import kotlinx.coroutines.flow.Flow
 
-// ─── AccountDao ───────────────────────────────────────────────────────────────
+// ── AccountDao ────────────────────────────────────────────────────────────────
 
 @Dao
 interface AccountDao {
     @Query("SELECT * FROM accounts ORDER BY isDefault DESC, name ASC")
     fun getAllAccounts(): Flow<List<AccountEntity>>
 
-    @Query("SELECT * FROM accounts WHERE id = :id")
+    @Query("SELECT * FROM accounts WHERE id = :id LIMIT 1")
     suspend fun getAccountById(id: Long): AccountEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -23,8 +23,8 @@ interface AccountDao {
     @Delete
     suspend fun deleteAccount(account: AccountEntity)
 
-    @Query("UPDATE accounts SET balance = balance + :amount WHERE id = :id")
-    suspend fun updateBalance(id: Long, amount: Double)
+    @Query("UPDATE accounts SET balance = balance + :delta WHERE id = :id")
+    suspend fun updateBalance(id: Long, delta: Double)
 
     @Query("SELECT SUM(balance) FROM accounts WHERE type != 'CREDIT_CARD'")
     fun getTotalBalance(): Flow<Double?>
@@ -33,7 +33,7 @@ interface AccountDao {
     fun getTotalAvailableCredit(): Flow<Double?>
 }
 
-// ─── TransactionDao ───────────────────────────────────────────────────────────
+// ── TransactionDao ────────────────────────────────────────────────────────────
 
 @Dao
 interface TransactionDao {
@@ -46,28 +46,21 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE accountId = :accountId ORDER BY date DESC")
     fun getTransactionsByAccount(accountId: Long): Flow<List<TransactionEntity>>
 
-    @Query("SELECT * FROM transactions WHERE categoryId = :categoryId ORDER BY date DESC")
-    fun getTransactionsByCategory(categoryId: Long): Flow<List<TransactionEntity>>
-
     @Query("SELECT * FROM transactions ORDER BY date DESC LIMIT :limit")
     fun getRecentTransactions(limit: Int = 10): Flow<List<TransactionEntity>>
 
-    @Query("""
-        SELECT SUM(amount) FROM transactions 
-        WHERE type = 'EXPENSE' AND date BETWEEN :startDate AND :endDate
-    """)
+    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'EXPENSE' AND date BETWEEN :startDate AND :endDate")
     fun getTotalExpenseInRange(startDate: Long, endDate: Long): Flow<Double?>
 
-    @Query("""
-        SELECT SUM(amount) FROM transactions 
-        WHERE type = 'INCOME' AND date BETWEEN :startDate AND :endDate
-    """)
+    @Query("SELECT SUM(amount) FROM transactions WHERE type = 'INCOME' AND date BETWEEN :startDate AND :endDate")
     fun getTotalIncomeInRange(startDate: Long, endDate: Long): Flow<Double?>
 
     @Query("""
-        SELECT categoryId, SUM(amount) as total FROM transactions
-        WHERE type = 'EXPENSE' AND date BETWEEN :startDate AND :endDate
-        GROUP BY categoryId ORDER BY total DESC
+        SELECT categoryId, SUM(amount) AS total 
+        FROM transactions 
+        WHERE type = 'EXPENSE' AND date BETWEEN :startDate AND :endDate 
+        GROUP BY categoryId 
+        ORDER BY total DESC
     """)
     fun getCategoryWiseSpending(startDate: Long, endDate: Long): Flow<List<CategorySpending>>
 
@@ -80,20 +73,23 @@ interface TransactionDao {
     @Delete
     suspend fun deleteTransaction(transaction: TransactionEntity)
 
-    @Query("SELECT * FROM transactions WHERE id = :id")
+    @Query("SELECT * FROM transactions WHERE id = :id LIMIT 1")
     suspend fun getTransactionById(id: Long): TransactionEntity?
 }
 
-data class CategorySpending(val categoryId: Long, val total: Double)
+data class CategorySpending(
+    val categoryId: Long,
+    val total: Double
+)
 
-// ─── CategoryDao ──────────────────────────────────────────────────────────────
+// ── CategoryDao ───────────────────────────────────────────────────────────────
 
 @Dao
 interface CategoryDao {
     @Query("SELECT * FROM categories ORDER BY isDefault DESC, name ASC")
     fun getAllCategories(): Flow<List<CategoryEntity>>
 
-    @Query("SELECT * FROM categories WHERE id = :id")
+    @Query("SELECT * FROM categories WHERE id = :id LIMIT 1")
     suspend fun getCategoryById(id: Long): CategoryEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -105,14 +101,14 @@ interface CategoryDao {
     @Delete
     suspend fun deleteCategory(category: CategoryEntity)
 
-    @Query("SELECT * FROM categories WHERE type IN ('EXPENSE', 'BOTH') ORDER BY isDefault DESC, name ASC")
+    @Query("SELECT * FROM categories WHERE type IN ('EXPENSE','BOTH') ORDER BY isDefault DESC, name ASC")
     fun getExpenseCategories(): Flow<List<CategoryEntity>>
 
-    @Query("SELECT * FROM categories WHERE type IN ('INCOME', 'BOTH') ORDER BY isDefault DESC, name ASC")
+    @Query("SELECT * FROM categories WHERE type IN ('INCOME','BOTH') ORDER BY isDefault DESC, name ASC")
     fun getIncomeCategories(): Flow<List<CategoryEntity>>
 }
 
-// ─── DebtDao ──────────────────────────────────────────────────────────────────
+// ── DebtDao ───────────────────────────────────────────────────────────────────
 
 @Dao
 interface DebtDao {
@@ -141,7 +137,7 @@ interface DebtDao {
     fun getTotalBorrowed(): Flow<Double?>
 }
 
-// ─── ReminderDao ──────────────────────────────────────────────────────────────
+// ── ReminderDao ───────────────────────────────────────────────────────────────
 
 @Dao
 interface ReminderDao {
@@ -160,6 +156,6 @@ interface ReminderDao {
     @Delete
     suspend fun deleteReminder(reminder: ReminderEntity)
 
-    @Query("SELECT * FROM reminders WHERE id = :id")
+    @Query("SELECT * FROM reminders WHERE id = :id LIMIT 1")
     suspend fun getReminderById(id: Long): ReminderEntity?
 }

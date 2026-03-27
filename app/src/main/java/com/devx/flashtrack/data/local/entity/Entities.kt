@@ -2,9 +2,8 @@ package com.devx.flashtrack.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import java.time.LocalDate
 
-// ─── Account ────────────────────────────────────────────────────────────────
+// ── Account ────────────────────────────────────────────────────────────────────
 
 enum class AccountType { BANK, WALLET, CASH, CREDIT_CARD }
 
@@ -18,17 +17,17 @@ data class AccountEntity(
     val colorHex: String = "#4CAF50",
     val iconName: String = "account_balance",
     val isDefault: Boolean = false,
-    // Credit card specific
+    // Credit card extras
     val creditLimit: Double = 0.0,
     val availableCredit: Double = 0.0,
-    val billingCycleStart: Int = 1,  // day of month
+    val billingCycleStart: Int = 1,
     val billingCycleEnd: Int = 30,
-    val dueDate: Int = 15,           // day of month
+    val dueDate: Int = 15,
     val rewardPoints: Int = 0,
     val createdAt: Long = System.currentTimeMillis()
 )
 
-// ─── Transaction ─────────────────────────────────────────────────────────────
+// ── Transaction ────────────────────────────────────────────────────────────────
 
 enum class TransactionType { EXPENSE, INCOME, TRANSFER }
 
@@ -39,20 +38,20 @@ data class TransactionEntity(
     val amount: Double,
     val categoryId: Long,
     val accountId: Long,
-    val toAccountId: Long? = null,   // for transfers
+    val toAccountId: Long? = null,
     val title: String,
     val notes: String = "",
-    val tags: String = "",           // comma-separated
+    val tags: String = "",
     val receiptPath: String? = null,
     val date: Long = System.currentTimeMillis(),
     val isRecurring: Boolean = false,
-    val recurringInterval: String? = null, // DAILY, WEEKLY, MONTHLY, YEARLY
+    val recurringInterval: String? = null,
     val recurringEndDate: Long? = null,
-    val parentTransactionId: Long? = null, // for recurring children
+    val parentTransactionId: Long? = null,
     val createdAt: Long = System.currentTimeMillis()
 )
 
-// ─── Category ────────────────────────────────────────────────────────────────
+// ── Category ───────────────────────────────────────────────────────────────────
 
 @Entity(tableName = "categories")
 data class CategoryEntity(
@@ -61,13 +60,13 @@ data class CategoryEntity(
     val iconName: String,
     val colorHex: String,
     val isDefault: Boolean = false,
-    val type: String = "BOTH",       // EXPENSE, INCOME, BOTH
-    val budget: Double = 0.0,        // monthly budget (0 = no budget)
-    val keywords: String = "",       // comma-separated for auto-categorization
+    val type: String = "BOTH",       // EXPENSE | INCOME | BOTH
+    val budget: Double = 0.0,
+    val keywords: String = "",
     val createdAt: Long = System.currentTimeMillis()
 )
 
-// ─── Debt / IOU ──────────────────────────────────────────────────────────────
+// ── Debt / IOU ─────────────────────────────────────────────────────────────────
 
 enum class DebtType { LENT, BORROWED }
 
@@ -86,7 +85,7 @@ data class DebtEntity(
     val createdAt: Long = System.currentTimeMillis()
 )
 
-// ─── Reminder ────────────────────────────────────────────────────────────────
+// ── Reminder ───────────────────────────────────────────────────────────────────
 
 enum class ReminderInterval { DAILY, WEEKLY, MONTHLY, YEARLY, ONCE }
 

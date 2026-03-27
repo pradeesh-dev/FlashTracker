@@ -3,11 +3,8 @@ package com.devx.flashtrack.ui.navigation
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
-import androidx.navigation.NavHostController
-import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
+import androidx.navigation.*
+import androidx.navigation.compose.*
 import com.devx.flashtrack.ui.screens.accounts.AccountsScreen
 import com.devx.flashtrack.ui.screens.analysis.AnalysisScreen
 import com.devx.flashtrack.ui.screens.categories.CategoriesScreen
@@ -20,17 +17,17 @@ import com.devx.flashtrack.ui.screens.transaction.AddTransactionScreen
 import com.devx.flashtrack.viewmodel.MainViewModel
 
 sealed class Screen(val route: String) {
-    object Onboarding    : Screen("onboarding")
-    object Home          : Screen("home")
-    object AddTransaction: Screen("add_transaction?type={type}") {
+    object Onboarding     : Screen("onboarding")
+    object Home           : Screen("home")
+    object AddTransaction : Screen("add_transaction?type={type}") {
         fun createRoute(type: String = "EXPENSE") = "add_transaction?type=$type"
     }
-    object Accounts      : Screen("accounts")
-    object Analysis      : Screen("analysis")
-    object Reminders     : Screen("reminders")
-    object Debts         : Screen("debts")
-    object Categories    : Screen("categories")
-    object Settings      : Screen("settings")
+    object Accounts       : Screen("accounts")
+    object Analysis       : Screen("analysis")
+    object Reminders      : Screen("reminders")
+    object Debts          : Screen("debts")
+    object Categories     : Screen("categories")
+    object Settings       : Screen("settings")
 }
 
 @Composable
@@ -40,12 +37,12 @@ fun FlashTrackNavGraph(
     startDestination: String
 ) {
     NavHost(
-        navController = navController,
+        navController    = navController,
         startDestination = startDestination,
-        enterTransition = { slideInHorizontally(tween(300)) { it / 5 } + fadeIn(tween(300)) },
-        exitTransition = { slideOutHorizontally(tween(300)) { -it / 5 } + fadeOut(tween(300)) },
-        popEnterTransition = { slideInHorizontally(tween(300)) { -it / 5 } + fadeIn(tween(300)) },
-        popExitTransition = { slideOutHorizontally(tween(300)) { it / 5 } + fadeOut(tween(300)) }
+        enterTransition  = { slideInHorizontally(tween(280)) { it / 6 } + fadeIn(tween(280)) },
+        exitTransition   = { slideOutHorizontally(tween(280)) { -it / 6 } + fadeOut(tween(280)) },
+        popEnterTransition  = { slideInHorizontally(tween(280)) { -it / 6 } + fadeIn(tween(280)) },
+        popExitTransition   = { slideOutHorizontally(tween(280)) { it / 6 } + fadeOut(tween(280)) }
     ) {
         composable(Screen.Onboarding.route) {
             OnboardingScreen(onFinish = {
@@ -58,22 +55,19 @@ fun FlashTrackNavGraph(
         composable(Screen.Home.route) {
             HomeScreen(
                 viewModel = viewModel,
-                onAddTransaction = { type ->
-                    navController.navigate(Screen.AddTransaction.createRoute(type))
-                },
+                onAddTransaction = { type -> navController.navigate(Screen.AddTransaction.createRoute(type)) },
                 onNavigate = { route -> navController.navigate(route) }
             )
         }
 
         composable(
-            route = Screen.AddTransaction.route,
+            route     = Screen.AddTransaction.route,
             arguments = listOf(navArgument("type") { defaultValue = "EXPENSE" })
-        ) { backStack ->
-            val type = backStack.arguments?.getString("type") ?: "EXPENSE"
+        ) { back ->
             AddTransactionScreen(
-                viewModel = viewModel,
-                initialType = type,
-                onBack = { navController.popBackStack() }
+                viewModel   = viewModel,
+                initialType = back.arguments?.getString("type") ?: "EXPENSE",
+                onBack      = { navController.popBackStack() }
             )
         }
 

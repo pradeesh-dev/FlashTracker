@@ -1,27 +1,34 @@
 package com.devx.flashtrack.ui.screens.analysis
 
-import androidx.compose.animation.*
-import androidx.compose.foundation.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.*
-import androidx.compose.foundation.shape.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.rounded.ArrowBackIosNew
+import androidx.compose.material.icons.rounded.ChevronLeft
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.*
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import co.yml.charts.common.model.PlotType
 import co.yml.charts.ui.piechart.charts.PieChart
 import co.yml.charts.ui.piechart.models.PieChartConfig
 import co.yml.charts.ui.piechart.models.PieChartData
-import com.devx.flashtrack.data.local.entity.TransactionType
-import com.devx.flashtrack.ui.components.*
+import com.devx.flashtrack.ui.components.EmptyState
+import com.devx.flashtrack.ui.components.iconEmojiFor
+import com.devx.flashtrack.ui.screens.home.HomeTxnRow
 import com.devx.flashtrack.ui.theme.*
 import com.devx.flashtrack.viewmodel.MainViewModel
 import java.time.YearMonth
@@ -32,14 +39,12 @@ import java.util.Locale
 @Composable
 fun AnalysisScreen(viewModel: MainViewModel, onBack: () -> Unit) {
     val selectedMonth by viewModel.selectedMonth.collectAsStateWithLifecycle()
-    val monthExpense by viewModel.monthlyExpense.collectAsStateWithLifecycle()
-    val monthIncome by viewModel.monthlyIncome.collectAsStateWithLifecycle()
-    val catSpending by viewModel.categorySpending.collectAsStateWithLifecycle()
-    val categories by viewModel.categories.collectAsStateWithLifecycle()
-    val txns by viewModel.monthlyTransactions.collectAsStateWithLifecycle()
-    val showBalance by viewModel.showBalance.collectAsStateWithLifecycle()
-
-    var activeTab by remember { mutableIntStateOf(0) } // 0=Overview, 1=Transactions
+    val monthExpense  by viewModel.monthlyExpense.collectAsStateWithLifecycle()
+    val monthIncome   by viewModel.monthlyIncome.collectAsStateWithLifecycle()
+    val catSpending   by viewModel.categorySpending.collectAsStateWithLifecycle()
+    val categories    by viewModel.categories.collectAsStateWithLifecycle()
+    val txns          by viewModel.monthlyTransactions.collectAsStateWithLifecycle()
+    val showBalance   by viewModel.showBalance.collectAsStateWithLifecycle()
 
     val expense = monthExpense ?: 0.0
     val income  = monthIncome  ?: 0.0
@@ -59,7 +64,8 @@ fun AnalysisScreen(viewModel: MainViewModel, onBack: () -> Unit) {
             modifier = Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(bottom = 32.dp)
         ) {
-            // ─── Month picker ──────────────────────────────────────────────────
+
+            // ── Month navigation ──────────────────────────────────────────────
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 8.dp),
@@ -67,7 +73,7 @@ fun AnalysisScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = { viewModel.selectMonth(selectedMonth.minusMonths(1)) }) {
-                        Icon(Icons.Rounded.ChevronLeft, "Prev month")
+                        Icon(Icons.Rounded.ChevronLeft, "Previous month")
                     }
                     Text(
                         text = selectedMonth.format(DateTimeFormatter.ofPattern("MMMM yyyy", Locale.getDefault())),
@@ -76,31 +82,32 @@ fun AnalysisScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                         modifier = Modifier.width(180.dp),
                         textAlign = TextAlign.Center
                     )
-                    IconButton(
-                        onClick = { viewModel.selectMonth(selectedMonth.plusMonths(1)) },
-                        enabled = selectedMonth.isBefore(YearMonth.now())
-                    ) {
-                        Icon(Icons.Rounded.ChevronRight, "Next month",
-                             tint = if (selectedMonth.isBefore(YearMonth.now())) MaterialTheme.colorScheme.onSurface
-                                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f))
+                    val canGoForward = selectedMonth.isBefore(YearMonth.now())
+                    IconButton(onClick = { if (canGoForward) viewModel.selectMonth(selectedMonth.plusMonths(1)) }) {
+                        Icon(
+                            Icons.Rounded.ChevronRight, "Next month",
+                            tint = if (canGoForward) MaterialTheme.colorScheme.onSurface
+                                   else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                        )
                     }
                 }
             }
 
-            // ─── Summary row ───────────────────────────────────────────────────
+            // ── Summary pills ─────────────────────────────────────────────────
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    StatPill("Income", income, GreenIncome, "📈", showBalance, Modifier.weight(1f))
-                    StatPill("Expense", expense, RedExpense, "📉", showBalance, Modifier.weight(1f))
-                    StatPill("Balance", balance, if (balance >= 0) GreenIncome else RedExpense, "💰", showBalance, Modifier.weight(1f))
+                    AnalysisPill("Income",  income,  GreenIncome, "📈", showBalance, Modifier.weight(1f))
+                    AnalysisPill("Expense", expense, RedExpense,  "📉", showBalance, Modifier.weight(1f))
+                    AnalysisPill("Balance", balance,
+                        if (balance >= 0) GreenIncome else RedExpense, "💰", showBalance, Modifier.weight(1f))
                 }
             }
 
-            // ─── Pie chart ────────────────────────────────────────────────────
-            if (catSpending.isNotEmpty()) {
+            // ── Pie chart ─────────────────────────────────────────────────────
+            if (catSpending.isNotEmpty() && expense > 0) {
                 item {
                     Spacer(Modifier.height(20.dp))
                     Text(
@@ -113,72 +120,67 @@ fun AnalysisScreen(viewModel: MainViewModel, onBack: () -> Unit) {
 
                     val slices = catSpending.mapIndexed { i, cs ->
                         val cat = categories.find { it.id == cs.categoryId }
-                        val color = try {
-                            Color(android.graphics.Color.parseColor(cat?.colorHex ?: ChartColors[i % ChartColors.size].toHexString()))
-                        } catch (e: Exception) { ChartColors[i % ChartColors.size] }
+                        val color = runCatching {
+                            Color(android.graphics.Color.parseColor(cat?.colorHex ?: "#9E9E9E"))
+                        }.getOrDefault(ChartColors[i % ChartColors.size])
                         PieChartData.Slice(
                             label = cat?.name ?: "Other",
-                            value = cs.total.toFloat(),
+                            value = cs.total.toFloat().coerceAtLeast(0.001f),
                             color = color
                         )
                     }
 
-                    if (slices.isNotEmpty()) {
-                        val pieData = PieChartData(
-                            slices = slices,
-                            plotType = PlotType.Donut
-                        )
-                        val pieConfig = PieChartConfig(
-                            isAnimationEnable = true,
-                            showSliceLabels = false,
-                            animationDuration = 600,
-                            backgroundColor = Color.Transparent,
-                            isSumVisible = true,
-                            sumUnit = "₹",
-                            activeSliceAlpha = 0.9f,
-                            isClickOnSliceEnabled = false,
-                            labelVisible = false,
-                            strokeWidth = 100f,
-                            labelFontSize = 14.sp
-                        )
+                    val pieConfig = PieChartConfig(
+                        isAnimationEnable    = true,
+                        showSliceLabels      = false,
+                        animationDuration    = 600,
+                        backgroundColor      = Color.Transparent,
+                        isSumVisible         = true,
+                        sumUnit              = "₹",
+                        activeSliceAlpha     = 0.9f,
+                        isClickOnSliceEnabled = false,
+                        labelVisible         = false,
+                        strokeWidth          = 90f,
+                        labelFontSize        = 14.sp
+                    )
 
-                        PieChart(
-                            modifier = Modifier.fillMaxWidth().height(300.dp).padding(horizontal = 20.dp),
-                            pieChartData = pieData,
-                            pieChartConfig = pieConfig
-                        )
-                    }
+                    PieChart(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(280.dp)
+                            .padding(horizontal = 40.dp),
+                        pieChartData   = PieChartData(slices = slices, plotType = PlotType.Donut),
+                        pieChartConfig = pieConfig
+                    )
                 }
 
-                // Category legend + amounts
+                // Category breakdown list
                 item {
                     Spacer(Modifier.height(8.dp))
                     Column(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                        verticalArrangement = Arrangement.spacedBy(0.dp)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         catSpending.forEachIndexed { i, cs ->
                             val cat = categories.find { it.id == cs.categoryId }
-                            val catColor = try {
+                            val catColor = runCatching {
                                 Color(android.graphics.Color.parseColor(cat?.colorHex ?: "#9E9E9E"))
-                            } catch (e: Exception) { ChartColors[i % ChartColors.size] }
+                            }.getOrDefault(ChartColors[i % ChartColors.size])
                             val pct = if (expense > 0) (cs.total / expense * 100).toInt() else 0
 
                             Column {
                                 Row(
-                                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    Box(
-                                        modifier = Modifier.size(8.dp).clip(CircleShape).background(catColor)
-                                    )
-                                    Text(
-                                        iconEmojiFor(cat?.iconName ?: "category"),
-                                        fontSize = 14.sp
-                                    )
+                                    Box(Modifier.size(8.dp).clip(CircleShape).background(catColor))
+                                    Text(iconEmojiFor(cat?.iconName ?: "category"), fontSize = 14.sp)
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             cat?.name ?: "Other",
@@ -186,18 +188,18 @@ fun AnalysisScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                             fontWeight = FontWeight.SemiBold
                                         )
                                         LinearProgressIndicator(
-                                            progress = { pct / 100f },
-                                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp).height(3.dp).clip(RoundedCornerShape(2.dp)),
-                                            color = catColor,
-                                            trackColor = catColor.copy(alpha = 0.15f)
+                                            progress        = { (pct / 100f).coerceIn(0f, 1f) },
+                                            modifier        = Modifier.fillMaxWidth().padding(top = 4.dp)
+                                                                .height(3.dp).clip(RoundedCornerShape(2.dp)),
+                                            color           = catColor,
+                                            trackColor      = catColor.copy(alpha = 0.15f)
                                         )
                                     }
                                     Column(horizontalAlignment = Alignment.End) {
                                         Text(
                                             if (showBalance) "₹${"%,.0f".format(cs.total)}" else "₹••••",
-                                            style = MaterialTheme.typography.labelMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface
+                                            style      = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold
                                         )
                                         Text("$pct%", style = MaterialTheme.typography.labelSmall,
                                              color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -206,7 +208,7 @@ fun AnalysisScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                                 if (i < catSpending.size - 1) {
                                     HorizontalDivider(
                                         modifier = Modifier.padding(horizontal = 16.dp),
-                                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
+                                        color    = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
                                         thickness = 0.5.dp
                                     )
                                 }
@@ -221,11 +223,11 @@ fun AnalysisScreen(viewModel: MainViewModel, onBack: () -> Unit) {
                 }
             }
 
-            // ─── Transaction list ─────────────────────────────────────────────
+            // ── Transaction list ───────────────────────────────────────────────
             item {
                 Spacer(Modifier.height(24.dp))
                 Text(
-                    "Transactions",
+                    "Transactions (${txns.size})",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(horizontal = 20.dp)
@@ -235,22 +237,24 @@ fun AnalysisScreen(viewModel: MainViewModel, onBack: () -> Unit) {
 
             if (txns.isEmpty()) {
                 item {
-                    EmptyState("💸", "No transactions", "No transactions found\nfor this month")
+                    EmptyState("💸", "No transactions", "No transactions found for this month")
                 }
             } else {
                 items(txns, key = { it.id }) { txn ->
                     val cat = categories.find { it.id == txn.categoryId }
-                    com.devx.flashtrack.ui.screens.home.TransactionRow(
-                        transaction = txn,
-                        categoryName = cat?.name ?: "Other",
-                        categoryIcon = cat?.iconName ?: "category",
-                        categoryColor = cat?.colorHex ?: "#9E9E9E",
-                        showBalance = showBalance,
-                        modifier = Modifier.padding(horizontal = 4.dp)
+                    HomeTxnRow(
+                        title       = txn.title,
+                        category    = cat?.name ?: "Other",
+                        icon        = iconEmojiFor(cat?.iconName ?: "category"),
+                        iconColor   = runCatching { Color(android.graphics.Color.parseColor(cat?.colorHex ?: "#9E9E9E")) }.getOrDefault(GreenIncome),
+                        amount      = txn.amount,
+                        type        = txn.type,
+                        date        = txn.date,
+                        showBalance = showBalance
                     )
                     HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = 20.dp),
-                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                        modifier  = Modifier.padding(horizontal = 20.dp),
+                        color     = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
                         thickness = 0.5.dp
                     )
                 }
@@ -260,9 +264,9 @@ fun AnalysisScreen(viewModel: MainViewModel, onBack: () -> Unit) {
 }
 
 @Composable
-private fun StatPill(
-    label: String, amount: Double, color: Color, emoji: String,
-    showBalance: Boolean, modifier: Modifier = Modifier
+private fun AnalysisPill(
+    label: String, amount: Double, color: Color,
+    emoji: String, showBalance: Boolean, modifier: Modifier
 ) {
     Box(
         modifier = modifier
@@ -273,7 +277,8 @@ private fun StatPill(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(emoji, fontSize = 16.sp)
-            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(label, style = MaterialTheme.typography.labelSmall,
+                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
                 text = if (showBalance) "₹${"%,.0f".format(amount)}" else "₹••••",
                 style = MaterialTheme.typography.labelLarge,
@@ -283,5 +288,3 @@ private fun StatPill(
         }
     }
 }
-
-fun Color.toHexString(): String = "#${Integer.toHexString(this.toArgb()).substring(2).uppercase()}"

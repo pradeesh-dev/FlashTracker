@@ -7,7 +7,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -25,7 +24,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            // TODO: read theme pref from DataStore; hardcoded dark for now
             FlashTrackTheme(darkTheme = true) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -33,11 +31,9 @@ class MainActivity : ComponentActivity() {
                 ) {
                     val navController = rememberNavController()
                     val viewModel: MainViewModel = hiltViewModel()
-
-                    // For first-run we could show onboarding; skip directly to Home for now
                     FlashTrackNavGraph(
-                        navController = navController,
-                        viewModel = viewModel,
+                        navController    = navController,
+                        viewModel        = viewModel,
                         startDestination = Screen.Home.route
                     )
                 }
