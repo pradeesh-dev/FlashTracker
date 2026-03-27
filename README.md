@@ -1,197 +1,184 @@
 # ⚡ FlashTrack — Privacy-First Expense Tracker
 
-> Modern · Minimalistic · 100% Offline · INR-first · Beautiful Dark UI
+> Modern · Minimalistic · 100% Offline · INR-first · Dark-first · Jetpack Compose
 
 ---
 
-## 📱 Screenshots Overview
+## 🚀 Quick Start
 
-| Home Dashboard | Add Transaction | Analysis | Accounts |
-|---|---|---|---|
-| Greeting + Balance Card + Quick Actions + Recent Transactions | Expense / Income / Transfer tabs + Category picker + Tags | Donut pie chart + Category breakdown + Monthly filter | Account cards grouped by type with credit limits |
+### Option A — Android Studio (easiest)
 
-| Debts & IOUs | Reminders | Categories | Settings |
-|---|---|---|---|
-| Lent / Borrowed tabs + Settle dialog | Active / Inactive reminders with toggle | 3-column grid with icon + color | Theme toggle + Backup + Export + Lock |
+```bash
+# 1. Unzip and open
+unzip FlashTrack_v2.zip
+# File → Open → select FlashTrack/ folder in Android Studio
+
+# 2. Let Gradle sync (first run downloads ~250 MB)
+# 3. Run ▶ on any device / emulator (API 26+)
+```
+
+> **Android Studio handles the Gradle wrapper automatically.**
 
 ---
 
-## 🗂 Project Structure
+### Option B — Command Line
+
+```bash
+unzip FlashTrack_v2.zip && cd FlashTrack
+
+# One-time setup: download the gradle wrapper jar
+chmod +x setup.sh && ./setup.sh
+
+# Subsequent builds
+./gradlew assembleDebug
+
+# Install to connected device
+adb install app/build/outputs/apk/debug/app-debug.apk
+```
+
+---
+
+### Option C — GitHub Actions CI
+
+Push to GitHub — the included workflow (`.github/workflows/build.yml`) will:
+1. Install JDK 17
+2. Use `gradle/actions/setup-gradle` to generate the wrapper JAR automatically
+3. Build the debug APK and upload it as a workflow artifact
+
+**No need to commit `gradle-wrapper.jar`** — the CI workflow regenerates it from scratch.
+
+---
+
+## ⚠️ gradle-wrapper.jar Note
+
+The `gradle-wrapper.jar` binary is not committed (standard practice for .gitignore).  
+The project provides **three ways** to obtain it automatically:
+
+| Method | How |
+|---|---|
+| Android Studio | Downloads it automatically on first sync |
+| `./setup.sh` | Downloads from `services.gradle.org` |
+| GitHub Actions | `gradle/actions/setup-gradle@v3` generates it |
+
+---
+
+## 📱 Features
+
+### Multi-Account System
+- Bank accounts, Wallets (GPay, PhonePe, Amazon Pay), Cash, Credit Cards
+- Credit card fields: limit, available credit, billing cycle, due date
+- Toggle "Show Balance" eye icon — hides all amounts
+- Combined overview: Total Balance + Available Credit
+
+### Transactions
+- **3 types**: Expense (red) | Income (green) | Transfer (blue)
+- Fields: Amount (large input), Title, Category (emoji grid), Account, Date, Notes, Tags
+- Quick tag chips: amazon, netflix, zomato, grocery, bills, travel...
+- Recurring toggle: Daily / Weekly / Monthly / Yearly
+
+### Debts & IOUs
+- Track money lent **and** borrowed
+- Partial settlements with progress bar
+- "Settle Up" dialog per person
+- Running totals: "You'll Receive" vs "You Owe"
+
+### Custom Categories
+- 16 default categories with emoji icons
+- Add unlimited custom categories
+- Per-category: name, emoji icon, accent color, type (Expense/Income/Both), monthly budget
+
+### Reminders
+- Active / Inactive tabs
+- Repeat intervals: Once / Daily / Weekly / Monthly / Yearly
+- Due date picker, amount field
+- Notification broadcast receiver + Boot receiver
+
+### Analytics
+- Monthly donut pie chart (YCharts)
+- Category breakdown with % progress bars
+- Month-by-month navigation (← →)
+- Income / Expense / Balance summary pills
+
+### Settings
+- Dark/Light theme toggle
+- Biometric lock toggle
+- CSV export via share sheet
+- Backup & Restore stubs (ready to wire up SQLCipher)
+- About + Privacy policy
+
+---
+
+## 🗂 Architecture
 
 ```
 FlashTrack/
-├── app/
-│   ├── src/main/
-│   │   ├── java/com/devx/flashtrack/
-│   │   │   ├── FlashTrackApplication.kt       ← Hilt app
-│   │   │   ├── MainActivity.kt                ← Entry point
-│   │   │   ├── data/
-│   │   │   │   ├── local/
-│   │   │   │   │   ├── AppDatabase.kt         ← Room DB + pre-population
-│   │   │   │   │   ├── dao/Daos.kt            ← All 5 DAOs
-│   │   │   │   │   └── entity/Entities.kt     ← Account, Transaction, Category, Debt, Reminder
-│   │   │   │   └── repository/AppRepository.kt ← Single source of truth
-│   │   │   ├── di/DatabaseModule.kt           ← Hilt DI bindings
-│   │   │   ├── receivers/Receivers.kt         ← Boot + Reminder broadcast
-│   │   │   ├── viewmodel/MainViewModel.kt     ← Centralized StateFlows
-│   │   │   └── ui/
-│   │   │       ├── navigation/NavGraph.kt     ← Compose Navigation
-│   │   │       ├── theme/                     ← Color, Type, Theme
-│   │   │       ├── components/SharedComponents.kt
-│   │   │       └── screens/
-│   │   │           ├── onboarding/            ← 3-page welcome
-│   │   │           ├── home/                  ← Dashboard
-│   │   │           ├── transaction/           ← Add Expense/Income/Transfer
-│   │   │           ├── accounts/              ← Account list + add/edit
-│   │   │           ├── analysis/              ← Pie chart + monthly stats
-│   │   │           ├── debts/                 ← IOUs + settle-up
-│   │   │           ├── reminders/             ← Recurring + notifications
-│   │   │           ├── categories/            ← Custom categories management
-│   │   │           └── settings/              ← Theme + backup + security
-│   │   └── res/
-│   │       ├── values/themes.xml
-│   │       └── xml/                           ← network_security_config, file_paths
-│   └── build.gradle.kts
-├── gradle/libs.versions.toml                  ← Version catalog
-└── settings.gradle.kts
+├── data/
+│   ├── local/
+│   │   ├── entity/        ← Room @Entity data classes (Account, Transaction, Category, Debt, Reminder)
+│   │   ├── dao/           ← 5 DAOs with Flow queries
+│   │   └── AppDatabase.kt ← Room DB + seed data
+│   └── repository/        ← AppRepository (single source of truth, balance updates)
+├── di/                    ← Hilt DatabaseModule
+├── viewmodel/             ← MainViewModel (StateFlows, flatMapLatest for month analytics)
+├── ui/
+│   ├── theme/             ← Color, Type, Theme (dark-first M3)
+│   ├── components/        ← Shared helpers (EmptyState, iconEmojiFor)
+│   ├── navigation/        ← NavGraph + Screen sealed class
+│   └── screens/           ← 9 screens (Home, AddTransaction, Accounts, Analysis, Debts, Reminders, Categories, Settings, Onboarding)
+└── receivers/             ← ReminderReceiver, BootReceiver
 ```
 
 ---
 
-## 🚀 Setup Instructions
+## 🎨 Design Tokens
 
-### Prerequisites
-- **Android Studio Hedgehog (2023.1.1)** or later
-- **JDK 17**
-- **Android SDK 35** (targetSdk)
-- **Min SDK 26** (Android 8.0+)
-
-### Steps
-```bash
-# 1. Clone / copy project
-cd FlashTrack
-
-# 2. Open in Android Studio
-#    File → Open → select FlashTrack/ folder
-
-# 3. Let Gradle sync (first time downloads ~200MB)
-
-# 4. Run on device or emulator
-#    Run → Run 'app'   (or Shift+F10)
-```
-
----
-
-## ✨ Features Implemented
-
-### ✅ Multi-Account System
-- Bank accounts, Wallets (GPay, Amazon Pay, PhonePe), Cash, Credit Cards
-- Credit card extras: limit, available credit, due date, billing cycle
-- Toggle "Show Balance" eye icon on home + accounts screens
-- **Combined overview**: Total Balance + Available Credit
-
-### ✅ Transactions
-- **3 tabs**: Expense (red) | Income (green) | Transfer (blue)
-- Fields: Date picker, Amount (large keypad), Category (grid sheet), Account selector
-- Notes, Tags (quick chips + custom), Recurring toggle (weekly/monthly/yearly)
-- Auto balance update on both accounts for transfers
-
-### ✅ Debts & IOUs
-- Separate **"Debts & IOUs"** screen with Lent / Borrowed / Settled tabs
-- Per-entry: person name, amount, date, notes
-- **Settle Up** dialog with partial settlement + progress bar
-- Running totals: "You'll Receive" vs "You Owe"
-
-### ✅ Custom Categories
-- 16 default categories with emoji icons + colors
-- Add unlimited custom categories with name, icon (18 options), color (12 options), type, monthly budget
-- Edit / delete non-default categories
-
-### ✅ Recurring / Reminders
-- Mark transactions as recurring (Weekly / Monthly / Yearly / Daily)
-- Dedicated Reminders screen: Active / Inactive tabs
-- Toggle reminders on/off, set due date, amount, repeat interval
-- Notification broadcast receiver + Boot receiver for rescheduling
-
-### ✅ Analytics & Budgets
-- **Donut pie chart** (YCharts) with category breakdown
-- Monthly expense / income / balance summary
-- Category-wise % bar + spending list
-- Month navigation (prev/next arrows)
-- Per-category budget support (stored in DB)
-
-### ✅ Premium Extras
-- **CSV Export** via share sheet
-- **Biometric lock** toggle (UI ready, hook into `BiometricPrompt`)
-- Encrypted backup / restore stubs (ready to implement with SQLCipher)
-- **Auto-categorization** via keyword mapping (stored per category)
-- Split expense fields in DB (notes field approach)
-- Material 3 + animated navigation transitions
-- Edge-to-edge display, splash screen
-
----
-
-## 🎨 Design System
-
-| Token | Value |
+| Role | Color |
 |---|---|
-| Primary (Income) | `#00C853` Green |
+| Income / Primary | `#00C853` Green |
 | Expense | `#FF1744` Red |
 | Credit Card | `#2979FF` Blue |
-| Debt / IOU | `#D500F9` Purple |
+| Debts / IOU | `#D500F9` Purple |
 | Reminder | `#FF6D00` Orange |
 | Background (dark) | `#0A0A0A` |
-| Surface (dark) | `#141414` / `#1E1E1E` |
+| Surface (dark) | `#1E1E1E` |
 
 ---
 
 ## 📦 Key Dependencies
 
-| Library | Purpose |
+| Library | Version | Purpose |
+|---|---|---|
+| Jetpack Compose BOM | 2024.08.00 | UI framework |
+| Material 3 | BOM-managed | Design system |
+| Room | 2.6.1 | SQLite ORM |
+| Hilt | 2.51.1 | Dependency injection |
+| Navigation Compose | 2.7.7 | Screen routing |
+| YCharts | 1.6.7 | Donut pie chart |
+| DataStore Preferences | 1.1.1 | Settings persistence |
+| Biometric | 1.1.0 | Fingerprint/Face lock |
+| WorkManager | 2.9.1 | Background tasks |
+| Core Splashscreen | 1.0.1 | Animated splash |
+
+---
+
+## 🔐 Privacy
+
+- **Zero internet permissions** — fully air-gapped
+- All data in `/data/data/com.devx.flashtrack/` — never leaves device
+- FileProvider for safe CSV sharing
+- No analytics, no crash reporting, no ads
+
+---
+
+## 📋 Requirements
+
+| Item | Requirement |
 |---|---|
-| Jetpack Compose BOM 2024.08 | UI framework |
-| Room 2.6.1 | Local SQLite database |
-| Hilt 2.51.1 | Dependency injection |
-| Navigation Compose 2.7.7 | Screen navigation |
-| YCharts 1.6.7 | Pie / donut chart |
-| DataStore Preferences 1.1.1 | Settings persistence |
-| Biometric 1.1.0 | Fingerprint / face lock |
-| WorkManager 2.9.1 | Background reminder jobs |
-| Core Splashscreen 1.0.1 | Animated splash |
-
----
-
-## 🔐 Privacy & Security
-
-- **Zero network permissions** (no internet access)
-- **FileProvider** for safe file sharing (CSV export)
-- **No analytics, no ads, no cloud**
-- Data lives entirely in `/data/data/com.devx.flashtrack/`
-- Backup file is encrypted (SQLCipher ready stub)
-- Biometric + PIN lock hooks provided
-
----
-
-## 🛣️ Roadmap / TODOs
-
-- [ ] SQLCipher database encryption
-- [ ] Full biometric lock implementation
-- [ ] Widget (balance glance on home screen)
-- [ ] SMS auto-import (parse bank SMSes)
-- [ ] Multiple currencies
-- [ ] Monthly report PDF generation
-- [ ] Split expense calculator
-- [ ] Cloud backup option (E2E encrypted)
-
----
-
-## 🤝 Build for Release
-
-```bash
-./gradlew assembleRelease
-# APK → app/build/outputs/apk/release/app-release.apk
-# Sign with your keystore before publishing to Play Store
-```
+| Android | API 26+ (Android 8.0+) |
+| JDK | 17+ |
+| Android Studio | Hedgehog 2023.1.1+ |
+| Gradle | 8.7 (auto-downloaded) |
+| AGP | 8.5.2 |
 
 ---
 
