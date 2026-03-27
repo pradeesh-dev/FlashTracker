@@ -22,8 +22,13 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x gradlew
 
-      # Optional but recommended: Add Gradle caching for faster builds
-      - name: Setup Gradle
+      # This forces regeneration of the wrapper using Java 21 (this fixes the corruption)
+      - name: Regenerate Gradle Wrapper
+        run: |
+          rm -f gradle/wrapper/gradle-wrapper.jar
+          ./gradlew wrapper --gradle-version 8.12 --no-daemon
+
+      - name: Setup Gradle (with caching)
         uses: gradle/actions/setup-gradle@v3
 
       - name: Build Debug APK
