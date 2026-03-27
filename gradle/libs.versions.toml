@@ -14,7 +14,7 @@ coroutines          = "1.8.1"
 datastore           = "1.1.1"
 biometric           = "1.1.0"
 workRuntime         = "2.9.1"
-charts              = "1.6.7"
+charts              = "2.1.0"
 splashscreen        = "1.0.1"
 desugarJdkLibs      = "2.0.4"
 
